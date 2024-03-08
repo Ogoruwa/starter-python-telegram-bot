@@ -14,23 +14,26 @@ app = FastAPI()
 load_dotenv()
 
 # Read the variable from the environment (or .env file)
-bot_token = os.getenv('BOT_TOKEN')
+bot_token = os.getenv("BOT_TOKEN")
 secret_token = os.getenv("SECRET_TOKEN")
-# webhook_url = os.getenv('CYCLIC_URL', 'http://localhost:8181') + "/webhook/"
+set_webhook = os.getenv("SET_WEBHOOK", False)
 
 bot = Bot(token=bot_token)
-# bot.set_webhook(url=webhook_url)
-# webhook_info = bot.get_webhook_info()
-# print(webhook_info)
 
-def auth_telegram_token(x_telegram_bot_api_secret_token: str = Header(None)) -> str:
-    # return true # uncomment to disable authentication
-    if x_telegram_bot_api_secret_token != secret_token:
+if set_webhook:
+    webhook_url = os.getenv('CYCLIC_URL', 'http://localhost:8181') + "/webhook/"
+    bot.set_webhook(url=webhook_url)
+    
+webhook_info = bot.get_webhook_info()
+print("Webhook Info: ",webhook_info)
+
+def auth_bot_token(bot_secret_token: str = Header(None)) -> str:
+    if bot_secret_token != secret_token:
         raise HTTPException(status_code=403, detail="Not authenticated")
-    return x_telegram_bot_api_secret_token
+    return bot_secret_token
 
 @app.post("/webhook/")
-async def handle_webhook(update: TelegramUpdate, token: str = Depends(auth_telegram_token)):
+async def handle_webhook(update: TelegramUpdate, token: str = Depends(auth_bot_token)):
     chat_id = update.message["chat"]["id"]
     text = update.message["text"]
     # print("Received message:", update.message)
