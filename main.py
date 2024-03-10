@@ -2,7 +2,7 @@ import os
 from pydantic import BaseModel
 from environs import Env
 from telegram import Update, Bot
-from fastapi import FastAPI, Header, HTTPException, Depends
+from fastapi import FastAPI, Header, HTTPException, Depends, Response
 
 
 # Read the variable from the environment (or .env file)
@@ -35,6 +35,12 @@ async def handle_startup():
     if webhook_base_url:
         webhook_url = webhook_base_url + "/webhook/"
         await bot.set_webhook(url=webhook_url)
+
+
+@app.get("/health/")
+async def health_check():
+    content = "Health is good"
+    return Response( content )
 
 
 @app.post("/webhook/")
