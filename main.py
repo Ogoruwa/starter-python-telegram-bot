@@ -25,6 +25,7 @@ class TelegramUpdate(BaseModel):
 
     
 def auth_bot_token(bot_secret_token: str = Header(None)) -> str:
+    print( f"\n\nSecret token: {secret_token}\nBot secret token: {bot_secret_token}\n" )
     if bot_secret_token != secret_token:
         raise HTTPException(status_code=403, detail="Not authenticated")
     return bot_secret_token
@@ -34,7 +35,7 @@ def auth_bot_token(bot_secret_token: str = Header(None)) -> str:
 async def handle_startup():
     if webhook_base_url:
         webhook_url = webhook_base_url + "/webhook/"
-        await bot.set_webhook(url=webhook_url)
+        await bot.set_webhook( url = webhook_url, secret_token = secret_token)
 
 
 @app.get("/health/")
@@ -50,7 +51,7 @@ async def handle_webhook(update: TelegramUpdate, token: str = Depends(auth_bot_t
         print(webhook_info)
     chat_id = update.message["chat"]["id"]
     text = update.message["text"]
-    # print("Received message:", update.message)
+    print("Received message:", update.message)
 
     if text == "/start":
         with open('hello.gif', 'rb') as photo:
