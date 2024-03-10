@@ -24,11 +24,11 @@ class TelegramUpdate(BaseModel):
     message: dict
 
     
-def auth_bot_token(bot_secret_token: str = Header(None)) -> str:
-    print( f"\n\nSecret token: {secret_token}\nBot secret token: {bot_secret_token}\n" )
-    if bot_secret_token != secret_token:
+def auth_bot_token(x_telegram_bot_api_secret_token: str = Header(None)) -> str:
+    print( f"\n\nSecret token: {secret_token}\nBot secret token: {x_telegram_bot_api_secret_token}\n" )
+    if x_telegram_bot_api_secret_token != secret_token:
         raise HTTPException(status_code=403, detail="Not authenticated")
-    return bot_secret_token
+    return x_telegram_bot_api_secret_token
 
 
 @app.on_event("startup")
