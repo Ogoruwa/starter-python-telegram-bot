@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-VENV_NAME=venv
+VENV_NAME=.venv
 
-python -m venv "${VENV_NAME}"
-source "${VENV_NAME}/bin/activate"
 python -m pip install --upgrade pip
+python -m pip install --upgrade venv
+python -m venv "${VENV_NAME}"
+source "${VENV_NAME}/Scripts/activate"
 python -m pip install -r requirements.txt
 
 cat << EOF_INSTALL
