@@ -1,8 +1,8 @@
 from environs import Env
-from .routes import router
+from routes import router
 from telegram import Update
 from contextlib import asynccontextmanager
-from .bot import create_bot_application, WebhookUpdate
+from bot import create_bot_application, WebhookUpdate
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 
 
