@@ -1,4 +1,4 @@
-from telegram import BotCommand, ForceReply
+from telegram import BotCommand, ForceReply, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes
 
 
