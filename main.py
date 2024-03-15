@@ -1,15 +1,15 @@
 from environs import Env
-from .routes import router
+from routes import router
 from telegram import Update
 from contextlib import asynccontextmanager
-from .bot import create_bot_application, WebhookUpdate
+from bot import create_bot_application, WebhookUpdate
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 
 
 env = Env()
 env.read_env()
 
-bot_token = env.tr("BOT_TOKEN")
+bot_token = env.str("BOT_TOKEN")
 bot_web_url = env.str("BOT_WEB_URL")
 secret_token = env.str("SECRET_TOKEN")
 
