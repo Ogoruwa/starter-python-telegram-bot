@@ -32,30 +32,6 @@ async def set_bot_commands_menu(application: Application) -> None:
         print(f"Can't set commands - {e}")
 
 
-async def create_bot_application(bot_token: str, secret_token: str, bot_web_url: str) -> None:
-    """Set up bot application and a web application for handling the incoming requests."""
-    context_types = ContextTypes(context = BotContext )
-
-    # Set updater to None so updates are handled by webhook
-    application = Application.builder().token(bot_token).updater(None).context_types(context_types).build()
-
-    # Set webhook: url and secret_key
-    await application.bot.set_webhook( url = bot_web_url, secret_token = secret_token )
-    await set_bot_commands_menu(application)
-
-    # Add handlers here
-    application.add_error_handler(handle_error)
-    
-    application.add_handler( CommandHandler("start", cmd_start) )
-    application.add_handler( CommandHandler("help", cmd_help) )
-    application.add_handler( CommandHandler("ping", cmd_ping) )
-    
-    application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message) )
-
-    return application
-
-
-
 # Create handlers here
 
 async def handle_error(update: Update, context: BotContext) -> None:
@@ -87,7 +63,8 @@ async def handle_error(update: Update, context: BotContext) -> None:
 
 async def handle_message(update: Update, context: BotContext) -> None:
     "Handles messages"
-    message = "I'm not in mood to chat"
+    message = "I don't want to chat"
+    print("\n", message, "\n")
     await update.reply_text(message)
 
 
@@ -119,3 +96,29 @@ async def cmd_ping(update: Update, context: BotContext) -> None:
         print(f"Can't send message - {e}")
         await update.message.answer("failed")
 
+
+
+# Function for creating the bot application 
+async def create_bot_application(bot_token: str, secret_token: str, bot_web_url: str) -> None:
+    """Set up bot application and a web application for handling the incoming requests."""
+    context_types = ContextTypes(context = BotContext )
+
+    # Set updater to None so updates are handled by webhook
+    application = Application.builder().token(bot_token).updater(None).context_types(context_types).build()
+
+    # Set webhook: url and secret_key
+    await application.bot.set_webhook( url = bot_web_url, secret_token = secret_token )
+    await set_bot_commands_menu(application)
+
+    # Add handlers here
+    application.add_handler( CommandHandler("start", cmd_start) )
+    application.add_handler( CommandHandler("help", cmd_help) )
+    application.add_handler( CommandHandler("ping", cmd_ping) )
+    
+    application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message) )
+
+    application.add_error_handler(handle_error)
+    
+    return application
+
+                                 
