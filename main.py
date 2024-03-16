@@ -27,7 +27,7 @@ def auth_bot_token(x_telegram_bot_api_secret_token: str = Header(None)) -> str:
 
 
 @router.post("/webhook/", status_code = status.HTTP_204_NO_CONTENT)
-async def webhook(update: Update, token: str = Depends(auth_bot_token)) -> None:
+async def webhook(update: WebhookUpdate, token: str = Depends(auth_bot_token)) -> None:
     """Handle incoming Telegram updates by putting them into the `update_queue`"""
     update = Update.de_json( update, update.bot ) 
     await application.update_queue.put(update)
