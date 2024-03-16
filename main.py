@@ -4,7 +4,7 @@ from telegram import Update
 from pydantic import BaseModel
 from bot import create_bot_application
 from contextlib import asynccontextmanager
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, Header, Request, HTTPException, status
 
 
 env = Env()
@@ -26,9 +26,11 @@ def auth_bot_token(x_telegram_bot_api_secret_token: str = Header(None)) -> str:
 async def lifespan(app: FastAPI):
     application = await create_bot_application( bot_token, secret_token, bot_web_url+webhook_url )
 
-    @router.post(webhook_url, status_code = status.HTTP_204_NO_CONTENT, required_model = None)
-    async def webhook(update: Update, token: str = Depends(auth_bot_token)) -> None:
+    @router.post(webhook_url, status_code = status.HTTP_204_NO_CONTENT )
+    async def webhook(update: Request, token: str = Depends(auth_bot_token)) -> None:
         """Handle incoming updates by putting them into the `update_queue`"""
+        update_json = request.json()
+        update = Update.de_json( update_json, application.bot )
         await application.update_queue.put(update)
 
     app.include_router(router)
