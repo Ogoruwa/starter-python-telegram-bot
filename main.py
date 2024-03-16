@@ -36,7 +36,8 @@ async def lifespan(app: FastAPI):
         """Handle incoming Telegram updates by putting them into the `update_queue`"""
         update = Update.de_json( update, application.bot ) 
         await application.update_queue.put(update)
-    
+
+    app.include_router(router)
     async with application:
         # Runs when app starts
         print("\n🚀 Bot starting up ...\n")
@@ -50,4 +51,3 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI( title = "BotFastAPI", description = "An API for a telegram bot", lifespan = lifespan )
-app.include_router(router)
