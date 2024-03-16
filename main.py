@@ -13,6 +13,7 @@ env.read_env()
 bot_token = env.str("BOT_TOKEN")
 bot_web_url = env.str("BOT_WEB_URL")
 secret_token = env.str("SECRET_TOKEN")
+webhook_url = env.str("WEBHOOK_URL", "/webhook/")
 
 
 class WebhookUpdate(BaseModel):
@@ -26,7 +27,7 @@ def auth_bot_token(x_telegram_bot_api_secret_token: str = Header(None)) -> str:
     return x_telegram_bot_api_secret_token
 
 
-@router.post("/webhook/", status_code = status.HTTP_204_NO_CONTENT)
+@router.post(webhook_url, status_code = status.HTTP_204_NO_CONTENT)
 async def webhook(update: WebhookUpdate, token: str = Depends(auth_bot_token)) -> None:
     """Handle incoming Telegram updates by putting them into the `update_queue`"""
     update = Update.de_json( update, update.bot ) 
@@ -35,7 +36,7 @@ async def webhook(update: WebhookUpdate, token: str = Depends(auth_bot_token)) -
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    application = await create_bot_application( bot_token, secret_token, bot_web_url )
+    application = await create_bot_application( bot_token, secret_token, bot_web_url+webhook_url )
     async with application:
         # Runs when app starts
         print("\n🚀 Bot starting up ...\n")
