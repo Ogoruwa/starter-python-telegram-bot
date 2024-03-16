@@ -1,10 +1,20 @@
 from environs import Env
-from telegram import BotCommand, ForceReply, Update
+from telegram import BotCommand, ForceReply, Update, ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes
 
 env = Env()
 env.read_env()
 DEVELOPER_CHAT_IDS = env.list("DEVELOPER_CHAT_IDS")
+
+
+class BotContext(CallbackContext):
+    """ Custom CallbackContext class that makes `user_data` available for updates of type `WebhookUpdate` """
+
+    @classmethod
+    def from_update( cls, update: object, application: "Application" ) -> "BotContext":
+        if isinstance(update, WebhookUpdate):
+            return cls(application = application, user_id = update.user_id)
+        return super().from_update(update, application)
 
 
 # Bot methods
@@ -23,7 +33,7 @@ async def set_bot_commands_menu(application: Application) -> None:
 
 async def create_bot_application(bot_token: str, secret_token: str, bot_web_url: str) -> None:
     """Set up bot application and a web application for handling the incoming requests."""
-    context_types = ContextTypes.DEFAULT_TYPE
+    context_types = ContextTypes(context = BotContext )
 
     # Set updater to None so updates are handled by webhook
     application = Application.builder().token(bot_token).updater(None).context_types(context_types).build()
@@ -47,7 +57,7 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
 
 # Create handlers here
 
-async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_error(update: Update, context: BotContext) -> None:
     """Log the error and send a message to notify the developer."""
     # Log the error first so it can be seen even if something breaks.
     print("Exception while handling an update:", exc_info=context.error)
@@ -74,13 +84,13 @@ async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await context.bot.send_message( chat_id = chat_id, text=message, parse_mode = ParseMode.HTML )
     
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_message(update: Update, context: BotContext) -> None:
     "Handles messages"
     message = "I'm not in mood to chat"
     await update.reply_text(message)
 
 
-async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_start(update: Update, context: BotContext) -> None:
     user = update.effective_user
     message = f"""<p>Hi {user.mention_html()}!</p>\n
         <p>I am ARIES, Ogo's botler 😄</p>\n
@@ -89,11 +99,11 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_html( message, reply_markup = ForceReply(selective=True) )
 
 
-async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_help(update: Update, context: BotContext) -> None:
     await update.message.answer(f"Your ID: {update.from_user.id}")
 
 
-async def cmd_tag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_tag(update: Update, context: BotContext) -> None:
     try:
         await update.send_copy(chat_id=update.chat.id)
     except Exception as e:
@@ -101,7 +111,7 @@ async def cmd_tag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.answer("Nice try!")
 
 
-async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_ping(update: Update, context: BotContext) -> None:
     try:
         await update.message.answer("pong")
     except Exception as e:
