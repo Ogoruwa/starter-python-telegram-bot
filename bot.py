@@ -72,30 +72,28 @@ async def handle_message(update: Update, context: BotContext) -> None:
 async def cmd_start(update: Update, context: BotContext) -> None:
     user = update.effective_user
     message = update.message
-    text = f"""<p>こんにちは！ {user.mention_html()} @{message.from_user.id}!</p>
-        <p>わたしはアリエスです, I am ARIES. Hajime mashite</p>
-        <p>Type /help to open the guide</p>"""
+    text = f"""<pre>こんにちは！ {user.mention_html()} @{message.from_user.id}!</pre>\n
+        <pre>わたしはアリエスです, I am ARIES. Hajime mashite</pre>\n
+        <pre>Type /help to open the guide</pre>"""
     await message.reply_html(text, reply_markup = ForceReply(selective = True))
 
 
 async def cmd_help(update: Update, context: BotContext) -> None:
     message = update.message
-    text = f"""<p>I am a bot designed to take care of your anime needs</p>
-        <p>Please, pick a topic to get more information</p>"""
+    text = f"""<pre>I am a bot designed to take care of your anime needs</pre>\n
+        <pre>Please, pick a topic to get more information</pre>"""
     await message.reply_html( text )
 
 
 async def cmd_about(update: Update, context: BotContext) -> None:
     message = update.message
-    text = f"""<p><b>&copyright; ©️ 2024 Ogoruwa</b></p>
-    <p>This bot is licensed under the <a href='https://opensource.org/license/mit'>MIT</a></p>
-    <p> Name: {context.bot.username}, Handle: {context.bot.name} </p>
-    <br/> <p><u>Links</u></p>
-    <p> <ul> <li>Source code: https://github.com/Ogoruwa/starter-python-telegram-bot </li>
-        <li> Documentation: TODO </li>
-        <li> Telegram link: {context.bot.link} </li>
-    </ul></p>
-    """
+    text = f"""<pre><b>©️ 2024 Ogoruwa</b></pre>\n
+    <pre>This bot is licensed under the <a href='https://opensource.org/license/mit'>MIT</a></pre>\n
+    <pre> Name: {context.bot.username}, Handle: {context.bot.name}</pre>\n\n
+    <pre><i>Links</i></pre>\n
+    <pre>Source code: https://github.com/Ogoruwa/starter-python-telegram-bot<\pre>\n
+    <pre>Documentation: TODO</pre>\n
+    <pre>Telegram link: {context.bot.link}</pre>"""
     message.reply_html( text )
 
 
