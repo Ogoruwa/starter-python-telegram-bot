@@ -16,11 +16,6 @@ secret_token = env.str("SECRET_TOKEN")
 webhook_url = env.str("WEBHOOK_URL", "/webhook/")
 
 
-class WebhookUpdate(BaseModel):
-    update_id: int
-    message: dict
-
-
 def auth_bot_token(x_telegram_bot_api_secret_token: str = Header(None)) -> str:
     if x_telegram_bot_api_secret_token != secret_token:
         raise HTTPException(status_code=403, detail="Not authenticated")
@@ -31,10 +26,9 @@ def auth_bot_token(x_telegram_bot_api_secret_token: str = Header(None)) -> str:
 async def lifespan(app: FastAPI):
     application = await create_bot_application( bot_token, secret_token, bot_web_url+webhook_url )
 
-    @router.post(webhook_url, status_code = status.HTTP_204_NO_CONTENT)
-    async def webhook(update: WebhookUpdate, token: str = Depends(auth_bot_token)) -> None:
-        """Handle incoming Telegram updates by putting them into the `update_queue`"""
-        update = Update.de_json( update, application.bot ) 
+    @router.post(webhook_url, status_code = status.HTTP_204_NO_CONTENT, required_model = None)
+    async def webhook(update: Update, token: str = Depends(auth_bot_token)) -> None:
+        """Handle incoming updates by putting them into the `update_queue`"""
         await application.update_queue.put(update)
 
     app.include_router(router)
