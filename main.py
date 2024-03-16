@@ -1,8 +1,8 @@
 from environs import Env
 from routes import router
 from telegram import Update
+from bot import create_bot_application
 from contextlib import asynccontextmanager
-from bot import create_bot_application, WebhookUpdate
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 
 
@@ -21,7 +21,7 @@ def auth_bot_token(x_telegram_bot_api_secret_token: str = Header(None)) -> str:
 
 
 @router.post("/webhook/")
-async def webhook(update: WebhookUpdate, token: str = Depends(auth_bot_token)) -> Response:
+async def webhook(update: Update, token: str = Depends(auth_bot_token)) -> Response:
     """Handle incoming Telegram updates by putting them into the `update_queue`"""
     update = Update.de_json( update, update.bot ) 
     await application.update_queue.put(update)
