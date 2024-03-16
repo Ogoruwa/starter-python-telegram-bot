@@ -13,7 +13,7 @@ class BotContext(CallbackContext):
 
     @classmethod
     def from_update( cls, update: object, application: "Application" ) -> "BotContext":
-        if isinstance(update, WebhookUpdate):
+        if isinstance(update, Update):
             return cls(application = application, user_id = update.user_id)
         return super().from_update(update, application)
 
@@ -64,7 +64,6 @@ async def handle_error(update: Update, context: BotContext) -> None:
 async def handle_message(update: Update, context: BotContext) -> None:
     "Handles messages"
     message = "I don't want to chat"
-    print("\n", message, "\n")
     await update.reply_text(message)
 
 
