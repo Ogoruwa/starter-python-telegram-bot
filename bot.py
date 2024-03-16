@@ -1,5 +1,6 @@
 from environs import Env
-from telegram import BotCommand, ForceReply, Update, ParseMode
+from telegram.constants import ParseMode
+from telegram import BotCommand, ForceReply, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes
 
 env = Env()
