@@ -64,7 +64,7 @@ async def handle_error(update: Update, context: BotContext) -> None:
 async def handle_message(update: Update, context: BotContext) -> None:
     "Handles messages"
     message = "I don't want to chat"
-    await update.reply_text(message)
+    await update.message.reply_text(message)
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
@@ -77,23 +77,23 @@ async def cmd_start(update: Update, context: BotContext) -> None:
 
 
 async def cmd_help(update: Update, context: BotContext) -> None:
-    await update.message.answer(f"Your ID: {update.from_user.id}")
+    await update.message.reply_text(f"Your ID: {update.from_user.id}")
 
 
 async def cmd_tag(update: Update, context: BotContext) -> None:
     try:
-        await update.send_copy(chat_id=update.chat.id)
+        await update.message.reply_copy(chat_id=update.chat.id)
     except Exception as e:
         print(f"Can't send message - {e}")
-        await update.message.answer("Nice try!")
+        await update.message.reply_text("Nice try!")
 
 
 async def cmd_ping(update: Update, context: BotContext) -> None:
     try:
-        await update.message.answer("pong")
+        await update.message.reply_text("pong")
     except Exception as e:
         print(f"Can't send message - {e}")
-        await update.message.answer("failed")
+        await update.message.reply_text("failed")
 
 
 
