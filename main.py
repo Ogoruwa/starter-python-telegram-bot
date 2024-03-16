@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI):
         print("Update JSON: ", update_json)
         print("Update: ", update)
         await application.update_queue.put(update)
+        await application.process_update(update)
 
     app.include_router(router)
     async with application:
