@@ -22,9 +22,10 @@ class BotContext(CallbackContext):
 async def set_bot_commands_menu(application: Application) -> None:
     # Register commands for bot menu
     commands = [
-        BotCommand( "start", "Start the bot" ),
-        BotCommand( "help", "Get help about this bot" ), 
-        BotCommand( "ping", "Ping the bot" )
+        BotCommand("start", "Start the bot"),
+        BotCommand("help", "Get help about this bot"), 
+        BotCommand("ping", "Ping the bot"),
+        BotCommand("about", "Get information about the bot")
     ]
     try:
         await application.bot.set_my_commands(commands)
@@ -37,7 +38,7 @@ async def set_bot_commands_menu(application: Application) -> None:
 async def handle_error(update: Update, context: BotContext) -> None:
     """Log the error and send a message to notify the developer."""
     # Log the error first so it can be seen even if something breaks.
-    print("Exception while handling an update:", exc_info=context.error)
+    print("Exception while handling an update:", exc_info = context.error)
 
     # traceback.format_exception returns the usual python message about an exception, but as a
     # list of strings rather than a single string, so we have to join them together.
@@ -47,9 +48,9 @@ async def handle_error(update: Update, context: BotContext) -> None:
     # Build the message with some markup and additional information about what happened.
     # TODO: Add some logic to deal with messages longer than the 4096 character limit.
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
-    message = (
+    text = (
         "An exception was raised while handling an update\n"
-        f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}"
+        f"<pre>update = {html.escape(json.dumps(update_str, indent = 2, ensure_ascii = False))}"
         "</pre>\n\n"
         f"<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n"
         f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n"
@@ -58,42 +59,53 @@ async def handle_error(update: Update, context: BotContext) -> None:
 
     # Finally, send the message
     for chat_id in DEVELOPER_CHAT_IDS:
-        await context.bot.send_message( chat_id = chat_id, text=message, parse_mode = ParseMode.HTML )
+        await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
     
 
 async def handle_message(update: Update, context: BotContext) -> None:
     "Handles messages"
-    message = "I don't want to chat"
-    await update.message.reply_text(message)
+    message = update.message
+    text = "Save your messages for later, the now is for anime 🔥"
+    await message.reply_text(text)
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
     user = update.effective_user
-    message = f"""<p>Hi {user.mention_html()}!</p>\n
-        <p>I am ARIES, Ogo's botler 😄</p>\n
-        <p>It is a pleasure to make your acquaintance.</p>\n
-        <p>Type /help to get a list of commands</p>"""
-    await update.message.reply_html( message, reply_markup = ForceReply(selective=True) )
+    message = update.message
+    text = f"""<p>こんにちは！ {user.mention_html()} @{message.from_user.id}!</p>
+        <p>わたしはアリエスです, I am ARIES. Hajime mashite</p>
+        <p>Type /help to open the guide</p>"""
+    await message.reply_html(text, reply_markup = ForceReply(selective = True))
 
 
 async def cmd_help(update: Update, context: BotContext) -> None:
-    await update.message.reply_text(f"Your ID: {update.from_user.id}")
+    message = update.message
+    text = f"""<p>I am a bot designed to take care of your anime needs</p>
+        <p>Please, pick a topic to get more information</p>"""
+    await message.reply_html( text )
 
 
-async def cmd_tag(update: Update, context: BotContext) -> None:
-    try:
-        await update.message.reply_copy(chat_id=update.chat.id)
-    except Exception as e:
-        print(f"Can't send message - {e}")
-        await update.message.reply_text("Nice try!")
+async def cmd_about(update: Update, context: BotContext) -> None:
+    message = update.message
+    text = f"""<p><b>&copyright; ©️ 2024 Ogoruwa</b></p>
+    <p>This bot is licensed under the <a href='https://opensource.org/license/mit'>MIT</a></p>
+    <p> Name: {context.bot.username}, Handle: {context.bot.name} </p>
+    <br/> <p><u>Links</u></p>
+    <p> <ul> <li>Source code: https://github.com/Ogoruwa/starter-python-telegram-bot </li>
+        <li> Documentation: TODO </li>
+        <li> Telegram link: {context.bot.link} </li>
+    </ul></p>
+    """
+    message.reply_html( text )
 
 
 async def cmd_ping(update: Update, context: BotContext) -> None:
+    message = update.message
     try:
-        await update.message.reply_text("pong")
+        await message.reply_text("pong", reply_to_message_id = message.message_id)
     except Exception as e:
         print(f"Can't send message - {e}")
-        await update.message.reply_text("failed")
+        await message.reply_text("failed", reply_to_message_id = message.message_id)
 
 
 
@@ -106,13 +118,14 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application = Application.builder().token(bot_token).updater(None).context_types(context_types).build()
 
     # Set webhook: url and secret_key
-    await application.bot.set_webhook( url = bot_web_url, secret_token = secret_token )
+    await application.bot.set_webhook(url = bot_web_url, secret_token = secret_token)
     await set_bot_commands_menu(application)
 
     # Add handlers here
     application.add_handler( CommandHandler("start", cmd_start) )
     application.add_handler( CommandHandler("help", cmd_help) )
     application.add_handler( CommandHandler("ping", cmd_ping) )
+    application.add_handler( CommandHandler("about", cmd_about) )
     
     application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message) )
 
