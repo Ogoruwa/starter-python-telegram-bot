@@ -14,7 +14,7 @@ class BotContext(CallbackContext):
     @classmethod
     def from_update( cls, update: object, application: "Application" ) -> "BotContext":
         if isinstance(update, Update):
-            return cls(application = application, user_id = update.user_id)
+            return cls(application = application)
         return super().from_update(update, application)
 
 
