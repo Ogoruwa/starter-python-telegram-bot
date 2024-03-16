@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     @router.post(webhook_url, status_code = status.HTTP_204_NO_CONTENT )
     async def webhook(request: Request, token: str = Depends(auth_bot_token)) -> None:
         """Handle incoming updates by putting them into the `update_queue`"""
-        update_json = request.json()
+        update_json = await request.json()
         update = Update.de_json( update_json, application.bot )
         await application.update_queue.put(update)
 
