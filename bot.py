@@ -76,7 +76,7 @@ async def handle_message(update: Update, context: BotContext) -> None:
 async def cmd_start(update: Update, context: BotContext) -> None:
     message = update.message
     user = update.effective_user
-    text = f"""はじめまして {user.full_name} {user.name}!
+    text = f"""はじめまして {user.full_name} {user.name}!\n
         わたしはアリエスです (I am ARIES).
         Use the help command (/help) to open the guide."""
     
@@ -97,7 +97,7 @@ async def cmd_about(update: Update, context: BotContext) -> None:
     text = f"""<b>Copyright 2024 Ogoruwa</b>
     This bot is licensed under the MIT (https://opensource.org/license/mit)
     Bot name: {context.bot.username}\nBot handle: {context.bot.name}
-    \n<u>Links</u>
+    \n<i>Links</i>
     Source code: GitHub (https://github.com/Ogoruwa/starter-python-telegram-bot)
     Documentation: Not yet created\n
     Telegram link: {context.bot.link}"""
@@ -115,6 +115,9 @@ async def cmd_ping(update: Update, context: BotContext) -> None:
         await message.reply_text("failed", reply_to_message_id = message.message_id)
 
 
+if settings.DEBUG:
+    async def raise_bot_exception(update: Update, context: BotContext):
+        context.bot.this_method_does_not_exist()
 
 # Function for creating the bot application 
 async def create_bot_application(bot_token: str, secret_token: str, bot_web_url: str) -> None:
@@ -134,8 +137,10 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application.add_handler( CommandHandler("ping", cmd_ping) )
     application.add_handler( CommandHandler("about", cmd_about) )
     
+    if settings.DEBUG:
+        application.add_handler( CommandHandler("raise", raise_bot_exception) )
+    
     application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message) )
-
     application.add_error_handler(handle_error)
     
     return application
