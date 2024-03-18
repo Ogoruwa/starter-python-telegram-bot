@@ -1,15 +1,13 @@
-import logging
-from environs import Env
 import html, json, traceback
+from logging import getLogger
+from settings import get_settings
 from telegram import BotCommand, Update
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackContext, filters
 
 
-env = Env()
-env.read_env()
-logger = logging.getLogger(__name__)
-DEVELOPER_CHAT_IDS = [ i.strip() for i in env.list("DEVELOPER_CHAT_IDS") ]
+settings = get_settings()
+logger = getLogger(__name__)
 
 
 class BotContext(CallbackContext):
@@ -64,7 +62,7 @@ async def handle_error(update: Update, context: BotContext) -> None:
     )
 
     # Finally, send the message
-    for chat_id in DEVELOPER_CHAT_IDS:
+    for chat_id in settings.DEVELOPER_CHAT_IDS:
         await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
     
 
@@ -78,9 +76,9 @@ async def handle_message(update: Update, context: BotContext) -> None:
 async def cmd_start(update: Update, context: BotContext) -> None:
     message = update.message
     user = update.effective_user
-    text = f"""こんにちは！ {user.full_name} {user.name}!
-        わたしはアリエスです, I am ARIES. Hajime mashite.
-        Use the help command (/help) to open the guide"""
+    text = f"""はじめまして {user.full_name} {user.name}!
+        わたしはアリエスです (I am ARIES).
+        Use the help command (/help) to open the guide."""
     
     text = remove_indents(text)
     await message.reply_text(text)
@@ -88,20 +86,21 @@ async def cmd_start(update: Update, context: BotContext) -> None:
 
 async def cmd_help(update: Update, context: BotContext) -> None:
     message = update.message
-    text = f"""I am a bot designed to take care of your anime needs.\n
-        Please, pick a topic to get more information"""
+    text = f"""I am a bot designed to take care of your anime needs.
+        Please, pick a topic to get more information."""
+    text = remove_indents(text)
     await message.reply_text( text )
 
 
 async def cmd_about(update: Update, context: BotContext) -> None:
     message = update.message
     text = f"""<b>Copyright 2024 Ogoruwa</b>
-    This bot is licensed under the <a title='MIT License' href='https://opensource.org/license/mit'>MIT</a>
-    Bot name: {context.bot.username}, Bot handle: {context.bot.name}
+    This bot is licensed under the MIT (https://opensource.org/license/mit)
+    Bot name: {context.bot.username}\nBot handle: {context.bot.name}
     \n<u>Links</u>
-    Source code: <a title='Source code' href='https://github.com/Ogoruwa/starter-python-telegram-bot'>https://github.com/Ogoruwa/starter-python-telegram-bot</a>
-    Documentation: <a title='Documentation' href='#'>Not yet created</a>\n
-    Telegram link: <a title='Telegram link href='{context.bot.link}'>{context.bot.link}</a>\n"""
+    Source code: GitHub (https://github.com/Ogoruwa/starter-python-telegram-bot)
+    Documentation: Not yet created\n
+    Telegram link: {context.bot.link}"""
 
     text = remove_indents(text)
     message.reply_html( text )
