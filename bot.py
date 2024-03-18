@@ -76,7 +76,7 @@ async def handle_message(update: Update, context: BotContext) -> None:
 async def cmd_start(update: Update, context: BotContext) -> None:
     message = update.message
     user = update.effective_user
-    text = f"""はじめまして {user.full_name} {user.name}!\n
+    text = f"""はじめまして {user.full_name} {user.name}!\n\n
         わたしはアリエスです (I am ARIES).
         Use the help command (/help) to open the guide."""
     
