@@ -38,6 +38,16 @@ async def set_bot_commands_menu(application: Application) -> None:
         print(f"Can't set commands - {e}")
 
 
+async def log_in_channels(text: str, context: BotContext, parse_mode = ParseMode.HTML):
+    for chat_id in settings.LOG_CHANNEL_IDS:
+        await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = parse_mode)
+    
+
+async def send_to_developers(text: str, context: BotContext):
+    for chat_id in settings.DEVELOPER_CHAT_IDS:
+        await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
+
+
 # Create handlers here
 
 async def handle_error(update: Update, context: BotContext) -> None:
@@ -115,6 +125,20 @@ async def cmd_ping(update: Update, context: BotContext) -> None:
         await message.reply_text("failed", reply_to_message_id = message.message_id)
 
 
+async def handle_new_member(update: Update, context: BotContext):
+    chat = update.effective_chat
+    for member in update.message.new_chat_members:
+        if member == context.bot:
+            await log_in_channels( f"Was added to {chat.type} chat: {chat.title} with id: {chat.id}", context )
+
+
+async def handle_left_member(update: Update, context: BotContext):
+    chat = update.effective_chat
+    if update.message.left_chat_member == context.bot:
+        await log_in_channels( f"Left {chat.type} chat: {chat.title} with id: {chat.id}", context )
+
+
+
 if settings.DEBUG:
     async def raise_bot_exception(update: Update, context: BotContext):
         context.bot.this_method_does_not_exist()
@@ -136,6 +160,7 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application.add_handler( CommandHandler("help", cmd_help) )
     application.add_handler( CommandHandler("ping", cmd_ping) )
     application.add_handler( CommandHandler("about", cmd_about) )
+    application.add_handler( MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_member) )
     
     if settings.DEBUG:
         application.add_handler( CommandHandler("raise", raise_bot_exception) )
