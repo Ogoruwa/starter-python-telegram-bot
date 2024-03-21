@@ -24,12 +24,12 @@ class BotContext(CallbackContext):
 class RegexCommandHandler(BaseHandler):
     __slots__ = ("pattern", "filters")
 
-    def __init__( self, pattern: re.Pattern | str, callback, filters = None, block: bool = True):
+    def __init__( self, pattern: re.Pattern | str, callback, filters_to_use = None, block: bool = True):
         super().__init__(callback, block=block)
         if isinstance(pattern, str):
             pattern = re.compile(pattern)
         self.pattern = pattern
-        self.filters: filters.BaseFilter = filters.UpdateType.MESSAGES if filters is None else filters
+        self.filters: filters.BaseFilter = filters.UpdateType.MESSAGES if filters_to_use is None else filters_to_use
 
 
     def check_update(self, update):
