@@ -1,13 +1,16 @@
+import re
+import anilist
 import html, json, traceback
 from logging import getLogger
 from settings import get_settings
-from telegram import BotCommand, Update
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackContext, filters
+from telegram import BotCommand, Update, MessageEntity
+from telegram.ext import Application, BaseHandler, CommandHandler, MessageHandler, ContextTypes, CallbackContext, filters
 
 
 settings = get_settings()
 logger = getLogger(__name__)
+client = anilist.AsyncClient()
 
 
 class BotContext(CallbackContext):
@@ -18,9 +21,81 @@ class BotContext(CallbackContext):
         return super().from_update(update, application)
 
 
-def remove_indents( text: str ):
+class RegexCommandHandler(BaseHandler):
+    __slots__ = ("pattern", "filters")
+
+    def __init__( self, pattern: re.Pattern | str, callback, filters = None, block: bool = True):
+        super().__init__(callback, block=block)
+        if isinstance(pattern, str):
+            pattern = re.compile(pattern)
+        self.pattern = pattern
+        self.filters: filters.BaseFilter = filters.UpdateType.MESSAGES if filters is None else filters
+
+
+    def check_update(self, update):
+        if isinstance(update, Update) and update.effective_message:
+            message = update.effective_message
+
+            if message.entities and message.entities[0].type == MessageEntity.BOT_COMMAND and message.entities[0].offset == 0 and message.text and message.get_bot():
+                command = message.text[1 : message.entities[0].length]
+                args = message.text.split()[1:]
+                command_parts = command.split("@")
+                command_parts.append(message.get_bot().username)
+
+                match = self.pattern.match(command_parts[0])
+                if not match and command_parts[1].lower() == message.get_bot().username.lower():
+                    return None
+
+                filter_result = self.filters.check_update(update)
+                if filter_result:
+                    return args, filter_result, match.groupdict()
+                return False
+
+        return None
+
+
+    def collect_additional_context(self, context, update: Update, application, check_result) -> None:
+        if isinstance(check_result, tuple):
+            context.args = check_result[0]
+
+            if isinstance(check_result[1], dict):
+                context.update(check_result[1])
+            
+            if isinstance(check_result[2], dict):
+                context.update(check_result[2])
+
+
+
+def remove_indents( text: str ) -> str:
     text = "\n".join( [line.strip() for line in text.split("\n")] )
     return text
+
+
+def get_anime_titles(anime: anilist.types.Anime) -> list[str]:
+    if settings.ANIME_TITLES == "romaji":
+        titles = [ anime.title.romaji, anime.title.english, anime.title.native ]
+    elif settings.ANIME_TITLES == "japanese":
+        titles = [ anime.title.native, anime.title.english, anime.title.romaji ]
+    else:
+        titles = [ anime.title.english, anime.title.romaji, anime.title.native ]
+    return titles
+
+
+def get_character_names(character: anilist.types.Character) -> list[str]:
+    if settings.ANIME_TITLES == "japanese":
+        names = [ character.name.native, character.name.alternative ]
+    else:
+        names = [ character.name.native, character.name.alternative ]
+    return names
+
+
+def get_main_characters(anime: anilist.types.Anime) -> list[anilist.types.Character]:
+    characters = []
+    for character in anime.characters:
+        if character.role == "MAIN":
+            characters.append(character)
+    return characters
+
 
 
 # Bot methods
@@ -30,22 +105,30 @@ async def set_bot_commands_menu(application: Application) -> None:
         BotCommand("start", "Start the bot"),
         BotCommand("help", "Get help about this bot"), 
         BotCommand("ping", "Ping the bot"),
-        BotCommand("about", "Get information about the bot")
+        BotCommand("about", "Get information about the bot"),
+
+        BotCommand("latest", "Get information about recently released episodes and anime"),
+        BotCommand("anime", "Get information about an anime"),
+        BotCommand("character", "Get information about a character"),
+        BotCommand("watch", "Watch an episode of an anime"),
+        BotCommand("download", "Download episodes of an anime"),
     ]
-    try:
-        await application.bot.set_my_commands(commands)
-    except Exception as e:
-        print(f"Can't set commands - {e}")
+    await application.bot.set_my_commands(commands)
 
 
 async def log_in_channels(text: str, context: BotContext, parse_mode = ParseMode.HTML):
-    for chat_id in settings.LOG_CHANNEL_IDS:
+    for chat_id in settings.LOG_CHAT_IDS:
         await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = parse_mode)
     
 
 async def send_to_developers(text: str, context: BotContext):
     for chat_id in settings.DEVELOPER_CHAT_IDS:
         await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
+
+
+async def get_help_text( topic: str ):
+    return ""
+
 
 
 # Create handlers here
@@ -78,9 +161,8 @@ async def handle_error(update: Update, context: BotContext) -> None:
 
 async def handle_message(update: Update, context: BotContext) -> None:
     "Handles messages"
-    message = update.message
-    text = "Save your messages for later, the now is for anime 🔥"
-    await message.reply_text(text)
+    text = ""
+    await update.message.reply_text(text)
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
@@ -118,23 +200,106 @@ async def cmd_about(update: Update, context: BotContext) -> None:
 
 async def cmd_ping(update: Update, context: BotContext) -> None:
     message = update.message
-    try:
-        await message.reply_text("pong", reply_to_message_id = message.message_id)
-    except Exception as e:
-        print(f"Can't send message - {e}")
-        await message.reply_text("failed", reply_to_message_id = message.message_id)
+    await message.reply_text("pong", reply_to_message_id = message.message_id)
+
+
+async def cmd_latest(update: Update, context: BotContext):
+    text = ""
+    text = remove_indents(text)
+    await update.message.reply_text(text, reply_to_message_id = update.message.message_id)
+
+
+async def cmd_anime(update: Update, context: BotContext):
+    if context.title.isnumeric():
+        animes = await client.get_anime( context.title )
+    else:
+        animes = await client.search_anime( context.title, 8, 1 )
+    
+    if animes is None:
+        text = "Anime not found"
+        await update.message.reply_text( text, reply_to_message_id = update.message.message_id )
+        return
+    animes, pagination = animes
+
+    if len(animes) > 1:
+        text = ""
+        for anime in animes:
+            titles = get_anime_titles(anime)
+            text = f"{text}\n{' / '.join(titles)}"
+    
+    else:
+        anime = animes[0]
+        text = f"""
+        ID: {anime.id}
+        <b>{'\n'.join(get_anime_titles(anime))}</b>
+        \t{anime.description_short}\n
+        Status: {anime.status}
+        Genres: {anime.genres}
+        Tags: {anime.tags}\n
+        Started: {anime.start_date.year}, Ended: {anime.end_date.year}
+        Main characters: {', '.join(get_main_characters(anime))}
+        Url: <a href='{anime.url}' title='Anilist url'>{anime.url}</a>
+        """
+    
+    text = remove_indents(text)
+    await update.message.reply_html(text, reply_to_message_id = update.message.message_id)
+
+
+async def cmd_character(update: Update, context: BotContext):
+    if context.title.isnumeric():
+        character = await client.get_character( context.title )
+    else:
+        character = await client.search_character( context.title, 8, 1 )
+
+    if characters is None:
+        text = "Character not found"
+        await update.message.reply_text( text, reply_to_message_id = update.message.message_id )
+        return
+    characters, pagination = characters
+
+    if len(characters) > 1:
+        text = ""
+        for character in characters:
+            titles = get_character_names(character)
+            text = f"{text}\n{' / '.join(titles)}"
+    
+    else:
+        character = characters[0]
+        text = f"""
+        ID: {character.id}
+        <b>{'\n'.join(get_character_names(character))}</b>
+        \t{character.description}\n
+        Gender: {character.gender}
+        Role: {character.role}
+        Age: {character.age}
+        DOB: {character.birth_date.year}
+        Url: <a href='{character.url}' title='Anilist url'>{character.url}</a>
+        """
+    
+    text = remove_indents(text)
+    await update.message.reply_html(text, reply_to_message_id = update.message.message_id)
+
+
+async def cmd_watch(update: Update, context: BotContext):
+    text = ""
+    await update.message.reply_text(text, reply_to_message_id = update.message.message_id)
+
+
+async def cmd_download(update: Update, context: BotContext):
+    text = ""
+    await update.message.reply_text(text, reply_to_message_id = update.message.message_id)
 
 
 async def handle_new_member(update: Update, context: BotContext):
     chat = update.effective_chat
     for member in update.message.new_chat_members:
-        if member == context.bot:
+        if member == context.bot.get_me():
             await log_in_channels( f"Was added to {chat.type} chat: {chat.title} with id: {chat.id}", context )
 
 
 async def handle_left_member(update: Update, context: BotContext):
     chat = update.effective_chat
-    if update.message.left_chat_member == context.bot:
+    if update.message.left_chat_member == context.bot.get_me():
         await log_in_channels( f"Left {chat.type} chat: {chat.title} with id: {chat.id}", context )
 
 
@@ -160,12 +325,20 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application.add_handler( CommandHandler("help", cmd_help) )
     application.add_handler( CommandHandler("ping", cmd_ping) )
     application.add_handler( CommandHandler("about", cmd_about) )
-    application.add_handler( MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_member) )
+    application.add_handler( CommandHandler("latest", cmd_latest) )
+
+    application.add_handler( RegexCommandHandler("anime (?P<title>.+)", cmd_anime) )
+    application.add_handler( RegexCommandHandler("character (?P<name>.+)", cmd_character) )
+    application.add_handler( RegexCommandHandler("watch (?P<name>.+)", cmd_watch) )
+    application.add_handler( RegexCommandHandler("download (?P<name>.+)", cmd_download) )
+
     
     if settings.DEBUG:
         application.add_handler( CommandHandler("raise", raise_bot_exception) )
     
+    application.add_handler( MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_member) )
     application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message) )
+
     application.add_error_handler(handle_error)
     
     return application
