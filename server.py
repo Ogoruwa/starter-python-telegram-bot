@@ -4,6 +4,7 @@ from main import app
 from settings import get_settings
 
 settings = get_settings()
+logging.getLogger( "httpx" ).setLevel( logging.WARNING )
 logging.basicConfig( format = "%(asctime)s - %(name)s -%(levelname)s - %(message)s", level = settings.LOG_LEVEL )
 
 if __name__ == "__main__":

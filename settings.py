@@ -6,8 +6,8 @@ env.read_env()
 
 
 class Settings:
-    PORT = 8181
-    HOST = "0.0.0.0"
+    PORT = env.int("PORT", 8181)
+    HOST = env.str("HOST", "0.0.0.0")
     DEBUG = env.bool("DEBUG", False)
     LOG_LEVEL = INFO if DEBUG else WARNING
 
@@ -18,8 +18,11 @@ class Settings:
     HEALTH_URL = env.str("HEALTH_URL", "/health/")
     WEBHOOK_URL = env.str("WEBHOOK_URL", "/webhook/")
 
-    LOG_CHANNEL_IDS = [ i.strip() for i in env.list("LOG_CHANNEL_IDS") ]
+    LOG_CHAT_IDS = [ i.strip() for i in env.list("LOG_CHAT_IDS") ]
     DEVELOPER_CHAT_IDS = [ i.strip() for i in env.list("DEVELOPER_CHAT_IDS") ]
+
+    ANIME_TITLES = "english"
+
 
 
 def get_settings():
