@@ -224,18 +224,19 @@ async def cmd_anime(update: Update, context: BotContext):
     if len(animes) > 1:
         text = ""
         for anime in animes:
-            titles = get_anime_titles(anime)
-            text = f"{text}\n{' / '.join(titles)}"
+            titles = "\n".join(get_anime_titles(anime))
+            text = f"{text}\n\nID: {anime.id}\n{titles}"
     
     else:
         anime = animes[0]
+        titles = "\n".join(get_anime_titles(anime))
         text = f"""
         ID: {anime.id}
-        <b>{'\n'.join(get_anime_titles(anime))}</b>
+        <b>{titles}</b>\n
         \t{anime.description_short}\n
         Status: {anime.status}
-        Genres: {anime.genres}
-        Tags: {anime.tags}\n
+        Genres: {', '.join(anime.genres)}
+        Tags: {', '.join(anime.tags)}\n
         Started: {anime.start_date.year}, Ended: {anime.end_date.year}
         Main characters: {', '.join(get_main_characters(anime))}
         Url: <a href='{anime.url}' title='Anilist url'>{anime.url}</a>
