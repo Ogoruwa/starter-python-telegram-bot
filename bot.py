@@ -266,9 +266,10 @@ async def cmd_character(update: Update, context: BotContext):
     
     else:
         character = characters[0]
+        names = "\n".join(get_character_names(character))
         text = f"""
         ID: {character.id}
-        <b>{'\n'.join(get_character_names(character))}</b>
+        <b>{names}</b>
         \t{character.description}\n
         Gender: {character.gender}
         Role: {character.role}
