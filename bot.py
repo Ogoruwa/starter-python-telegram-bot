@@ -4,8 +4,8 @@ import html, json, traceback
 from logging import getLogger
 from settings import get_settings
 from telegram.constants import ParseMode
-from telegram import BotCommand, Update, MessageEntity
-from telegram.ext import Application, BaseHandler, CommandHandler, MessageHandler, ContextTypes, CallbackContext, filters
+from telegram import BotCommand, Update
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackContext, filters, StringCommandHandler
 
 
 settings = get_settings()
@@ -19,51 +19,6 @@ class BotContext(CallbackContext):
         if isinstance(update, Update):
             return cls(application = application)
         return super().from_update(update, application)
-
-
-class RegexCommandHandler(BaseHandler):
-    __slots__ = ("pattern", "filters")
-
-    def __init__( self, pattern: re.Pattern | str, callback, filters_to_use = None, block: bool = True):
-        super().__init__(callback, block=block)
-        if isinstance(pattern, str):
-            pattern = re.compile(pattern)
-        self.pattern = pattern
-        self.filters: filters.BaseFilter = filters.UpdateType.MESSAGES if filters_to_use is None else filters_to_use
-
-
-    def check_update(self, update):
-        if isinstance(update, Update) and update.effective_message:
-            message = update.effective_message
-
-            if message.entities and message.entities[0].type == MessageEntity.BOT_COMMAND and message.entities[0].offset == 0 and message.text and message.get_bot():
-                command = message.text[1 : message.entities[0].length]
-                args = message.text.split()[1:]
-                command_parts = command.split("@")
-                command_parts.append(message.get_bot().username)
-
-                match = self.pattern.match(command_parts[0])
-                if not match and command_parts[1].lower() == message.get_bot().username.lower():
-                    return None
-
-                filter_result = self.filters.check_update(update)
-                if filter_result:
-                    return args, filter_result, match.groupdict()
-                return False
-
-        return None
-
-
-    def collect_additional_context(self, context, update: Update, application, check_result) -> None:
-        if isinstance(check_result, tuple):
-            context.args = check_result[0]
-
-            if isinstance(check_result[1], dict):
-                context.update(check_result[1])
-            
-            if isinstance(check_result[2], dict):
-                context.update(check_result[2])
-
 
 
 def remove_indents( text: str ) -> str:
@@ -162,8 +117,7 @@ async def handle_error(update: Update, context: BotContext) -> None:
     )
 
     # Finally, send the message
-    for chat_id in settings.DEVELOPER_CHAT_IDS:
-        await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
+    await send_to_developers(text, context)
     
 
 async def handle_message(update: Update, context: BotContext) -> None:
@@ -217,10 +171,11 @@ async def cmd_latest(update: Update, context: BotContext):
 
 
 async def cmd_anime(update: Update, context: BotContext):
-    if context.title.isnumeric():
-        animes = await client.get_anime( context.title )
+    title = context.args[0]
+    if title.isnumeric():
+        animes = await client.get_anime(title)
     else:
-        animes = await client.search_anime( context.title, 8, 1 )
+        animes = await client.search_anime(title, 8, 1)
     
     if animes is None:
         text = "Anime not found"
@@ -254,10 +209,11 @@ async def cmd_anime(update: Update, context: BotContext):
 
 
 async def cmd_character(update: Update, context: BotContext):
-    if context.title.isnumeric():
-        character = await client.get_character( context.title )
+    name = context.args[0]
+    if name.isnumeric():
+        character = await client.get_character(name)
     else:
-        character = await client.search_character( context.title, 8, 1 )
+        character = await client.search_character(name, 8, 1)
 
     if characters is None:
         text = "Character not found"
@@ -336,10 +292,10 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application.add_handler( CommandHandler("about", cmd_about) )
     application.add_handler( CommandHandler("latest", cmd_latest) )
 
-    application.add_handler( RegexCommandHandler("anime (?P<title>.+)", cmd_anime) )
-    application.add_handler( RegexCommandHandler("character (?P<name>.+)", cmd_character) )
-    application.add_handler( RegexCommandHandler("watch (?P<name>.+)", cmd_watch) )
-    application.add_handler( RegexCommandHandler("download (?P<name>.+)", cmd_download) )
+    application.add_handler( StringCommandHandler("anime", cmd_anime) )
+    application.add_handler( StringCommandHandler("character", cmd_character) )
+    application.add_handler( StringCommandHandler("watch", cmd_watch) )
+    application.add_handler( StringCommandHandler("download", cmd_download) )
 
     
     if settings.DEBUG:
