@@ -72,20 +72,27 @@ def remove_indents( text: str ) -> str:
 
 
 def get_anime_titles(anime: anilist.types.Anime) -> list[str]:
+    romaji = getattr( anime.title, "romaji", "" )
+    native = getattr( anime.title, "native", "" )
+    english = getattr( anime.title, "english", "" )
+
     if settings.ANIME_TITLES == "romaji":
-        titles = [ anime.title.romaji, anime.title.english, anime.title.native ]
+        titles = [ romaji, english, native ]
     elif settings.ANIME_TITLES == "japanese":
-        titles = [ anime.title.native, anime.title.english, anime.title.romaji ]
+        titles = [ native, english, romaji ]
     else:
-        titles = [ anime.title.english, anime.title.romaji, anime.title.native ]
+        titles = [ english, romaji, native ]
     return titles
 
 
 def get_character_names(character: anilist.types.Character) -> list[str]:
+    native = getattr( character.name, "native", "" )
+    alternative = getattr( character.name, "alternative", "" )
+
     if settings.ANIME_TITLES == "japanese":
-        names = [ character.name.native, character.name.alternative ]
+        names = [ native, alternative ]
     else:
-        names = [ character.name.native, character.name.alternative ]
+        names = [ native, alternative ]
     return names
 
 
@@ -161,7 +168,7 @@ async def handle_error(update: Update, context: BotContext) -> None:
 
 async def handle_message(update: Update, context: BotContext) -> None:
     "Handles messages"
-    text = ""
+    text = "Use /help to get a list of commands"
     await update.message.reply_text(text)
 
 
@@ -229,11 +236,11 @@ async def cmd_anime(update: Update, context: BotContext):
     
     else:
         anime = animes[0]
-        titles = "\n".join(get_anime_titles(anime))
+        titles = "\n".join(get_anime_titles(anime)).replace("\n\n", "\n")
         text = f"""
         ID: {anime.id}
         <b>{titles}</b>\n
-        \t{anime.description_short}\n
+        \t<i>{anime.description_short}</i>
         Status: {anime.status}
         Genres: {', '.join(anime.genres)}
         Tags: {', '.join(anime.tags)}\n
@@ -266,11 +273,11 @@ async def cmd_character(update: Update, context: BotContext):
     
     else:
         character = characters[0]
-        names = "\n".join(get_character_names(character))
+        names = "\n".join(get_character_names(character)).replace("\n\n", "\n")
         text = f"""
         ID: {character.id}
         <b>{names}</b>
-        \t{character.description}\n
+        \t<i>{character.description}</i>
         Gender: {character.gender}
         Role: {character.role}
         Age: {character.age}
@@ -339,6 +346,7 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
         application.add_handler( CommandHandler("raise", raise_bot_exception) )
     
     application.add_handler( MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_member) )
+    application.add_handler( MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, handle_left_member) )
     application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message) )
 
     application.add_error_handler(handle_error)
