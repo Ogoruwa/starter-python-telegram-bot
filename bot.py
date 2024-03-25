@@ -38,6 +38,16 @@ async def set_bot_commands_menu(application: Application) -> None:
         print(f"Can't set commands - {e}")
 
 
+async def log_in_channels(text: str, context: BotContext, parse_mode = ParseMode.HTML):
+    for chat_id in settings.LOG_CHANNEL_IDS:
+        await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = parse_mode)
+    
+
+async def send_to_developers(text: str, context: BotContext):
+    for chat_id in settings.DEVELOPER_CHAT_IDS:
+        await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
+
+
 # Create handlers here
 
 async def handle_error(update: Update, context: BotContext) -> None:
@@ -69,14 +79,14 @@ async def handle_error(update: Update, context: BotContext) -> None:
 async def handle_message(update: Update, context: BotContext) -> None:
     "Handles messages"
     message = update.message
-    text = "Save your messages for later, the now is for anime 🔥"
+    text = "Use /help to get a list of commands"
     await message.reply_text(text)
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
     message = update.message
     user = update.effective_user
-    text = f"""はじめまして {user.full_name} {user.name}!
+    text = f"""はじめまして {user.full_name} {user.name}!\n\n
         わたしはアリエスです (I am ARIES).
         Use the help command (/help) to open the guide."""
     
@@ -95,15 +105,15 @@ async def cmd_help(update: Update, context: BotContext) -> None:
 async def cmd_about(update: Update, context: BotContext) -> None:
     message = update.message
     text = f"""<b>Copyright 2024 Ogoruwa</b>
-    This bot is licensed under the MIT (https://opensource.org/license/mit)
+    This bot is licensed under the <a href='https://opensource.org/license/mit' title='MIT License'>MIT</a>
     Bot name: {context.bot.username}\nBot handle: {context.bot.name}
     \n<u>Links</u>
-    Source code: GitHub (https://github.com/Ogoruwa/starter-python-telegram-bot)
+    Source code: <a href='https://github.com/Ogoruwa/starter-python-telegram-bot' title='Github repository'>https://github.com/Ogoruwa/starter-python-telegram-bot</a>
     Documentation: Not yet created\n
-    Telegram link: {context.bot.link}"""
+    Telegram link: <a href='{context.bot.link}' title='Telegram link'>{context.bot.link}</a>"""
 
     text = remove_indents(text)
-    message.reply_html( text )
+    await message.reply_html( text )
 
 
 async def cmd_ping(update: Update, context: BotContext) -> None:
@@ -115,6 +125,23 @@ async def cmd_ping(update: Update, context: BotContext) -> None:
         await message.reply_text("failed", reply_to_message_id = message.message_id)
 
 
+async def handle_new_member(update: Update, context: BotContext):
+    chat = update.effective_chat
+    for member in update.message.new_chat_members:
+        if member == context.bot:
+            await log_in_channels( f"Was added to {chat.type} chat: {chat.title} with id: {chat.id}", context )
+
+
+async def handle_left_member(update: Update, context: BotContext):
+    chat = update.effective_chat
+    if update.message.left_chat_member == context.bot:
+        await log_in_channels( f"Left {chat.type} chat: {chat.title} with id: {chat.id}", context )
+
+
+
+if settings.DEBUG:
+    async def raise_bot_exception(update: Update, context: BotContext):
+        context.bot.this_method_does_not_exist()
 
 # Function for creating the bot application 
 async def create_bot_application(bot_token: str, secret_token: str, bot_web_url: str) -> None:
@@ -133,9 +160,13 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application.add_handler( CommandHandler("help", cmd_help) )
     application.add_handler( CommandHandler("ping", cmd_ping) )
     application.add_handler( CommandHandler("about", cmd_about) )
+    application.add_handler( MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_member) )
+    application.add_handler( MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, handle_left_member) )
+    
+    if settings.DEBUG:
+        application.add_handler( CommandHandler("raise", raise_bot_exception) )
     
     application.add_handler( MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message) )
-
     application.add_error_handler(handle_error)
     
     return application
