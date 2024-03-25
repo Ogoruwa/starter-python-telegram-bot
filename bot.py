@@ -171,6 +171,7 @@ async def cmd_latest(update: Update, context: BotContext):
 
 
 async def cmd_anime(update: Update, context: BotContext):
+    context.dhah()
     title = context.args[0]
     if title.isnumeric():
         animes = await client.get_anime(title)
