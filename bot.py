@@ -1,22 +1,26 @@
-from environs import Env
-import json, html, traceback
+import html, json, traceback
+from logging import getLogger
+from settings import get_settings
+from telegram import BotCommand, Update
 from telegram.constants import ParseMode
-from telegram import BotCommand, ForceReply, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackContext, filters
 
-env = Env()
-env.read_env()
-DEVELOPER_CHAT_IDS = env.list("DEVELOPER_CHAT_IDS")
+
+settings = get_settings()
+logger = getLogger(__name__)
 
 
 class BotContext(CallbackContext):
-    """ Custom CallbackContext class that makes `user_data` available for updates of type `WebhookUpdate` """
-
     @classmethod
     def from_update( cls, update: object, application: "Application" ) -> "BotContext":
         if isinstance(update, Update):
             return cls(application = application)
         return super().from_update(update, application)
+
+
+def remove_indents( text: str ):
+    text = "\n".join( [line.strip() for line in text.split("\n")] )
+    return text
 
 
 # Bot methods
@@ -39,7 +43,7 @@ async def set_bot_commands_menu(application: Application) -> None:
 async def handle_error(update: Update, context: BotContext) -> None:
     """Log the error and send a message to notify the developer."""
     # Log the error first so it can be seen even if something breaks.
-    print("Exception while handling an update:", exc_info = context.error)
+    logger.error("Exception while handling an update:", exc_info = context.error)
 
     # traceback.format_exception returns the usual python message about an exception, but as a
     # list of strings rather than a single string, so we have to join them together.
@@ -51,15 +55,14 @@ async def handle_error(update: Update, context: BotContext) -> None:
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
     text = (
         "An exception was raised while handling an update\n"
-        f"<pre>update = {html.escape(json.dumps(update_str, indent = 2, ensure_ascii = False))}"
-        "</pre>\n\n"
-        f"<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n"
-        f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n"
+        f"<pre>update = {html.escape(json.dumps(update_str, indent = 2, ensure_ascii = False))}</pre>\n\n"
+        f"<pre><u>context.chat_data</u> = {html.escape(str(context.chat_data))}</pre>\n\n"
+        f"<pre><u>context.user_data</u> = {html.escape(str(context.user_data))}</pre>\n\n"
         f"<pre>{html.escape(tb_string)}</pre>"
     )
 
     # Finally, send the message
-    for chat_id in DEVELOPER_CHAT_IDS:
+    for chat_id in settings.DEVELOPER_CHAT_IDS:
         await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
     
 
@@ -71,30 +74,35 @@ async def handle_message(update: Update, context: BotContext) -> None:
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
-    user = update.effective_user
     message = update.message
-    text = f"""<pre>こんにちは！ {user.mention_html()} @{message.from_user.id}!</pre>\n
-        <pre>わたしはアリエスです, I am ARIES. Hajime mashite</pre>\n
-        <pre>Type /help to open the guide</pre>"""
-    await message.reply_html(text, reply_markup = ForceReply(selective = True))
+    user = update.effective_user
+    text = f"""はじめまして {user.full_name} {user.name}!
+        わたしはアリエスです (I am ARIES).
+        Use the help command (/help) to open the guide."""
+    
+    text = remove_indents(text)
+    await message.reply_text(text)
 
 
 async def cmd_help(update: Update, context: BotContext) -> None:
     message = update.message
-    text = f"""<pre>I am a bot designed to take care of your anime needs</pre>\n
-        <pre>Please, pick a topic to get more information</pre>"""
-    await message.reply_html( text )
+    text = f"""I am a bot designed to take care of your anime needs.
+        Please, pick a topic to get more information."""
+    text = remove_indents(text)
+    await message.reply_text( text )
 
 
 async def cmd_about(update: Update, context: BotContext) -> None:
     message = update.message
-    text = f"""<pre><b>©️ 2024 Ogoruwa</b></pre>\n
-    <pre>This bot is licensed under the <a href='https://opensource.org/license/mit'>MIT</a></pre>\n
-    <pre> Name: {context.bot.username}, Handle: {context.bot.name}</pre>\n\n
-    <pre><i>Links</i></pre>\n
-    <pre>Source code: https://github.com/Ogoruwa/starter-python-telegram-bot<\pre>\n
-    <pre>Documentation: TODO</pre>\n
-    <pre>Telegram link: {context.bot.link}</pre>"""
+    text = f"""<b>Copyright 2024 Ogoruwa</b>
+    This bot is licensed under the MIT (https://opensource.org/license/mit)
+    Bot name: {context.bot.username}\nBot handle: {context.bot.name}
+    \n<u>Links</u>
+    Source code: GitHub (https://github.com/Ogoruwa/starter-python-telegram-bot)
+    Documentation: Not yet created\n
+    Telegram link: {context.bot.link}"""
+
+    text = remove_indents(text)
     message.reply_html( text )
 
 

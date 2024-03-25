@@ -1,11 +1,7 @@
-from environs import Env
-from fastapi import APIRouter, Response
+from fastapi import APIRouter
+from settings import get_settings
 
-env = Env()
-env.read_env()
-
-health_url = env.str("HEALTH_URL", "/health/")
-webhook_url = env.str("WEBHOOK_URL", "/webhook/")
+settings = get_settings()
 
 router = APIRouter(
     responses = {
@@ -15,8 +11,7 @@ router = APIRouter(
 )
 
 
-@router.get(health_url)
+@router.get(settings.HEALTH_URL, status_code=204)
 async def health_check():
-    content = "Health is good"
-    return Response( content )
+    return
 
