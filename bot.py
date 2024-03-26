@@ -26,9 +26,9 @@ def remove_indents( text: str ) -> str:
 
 
 def get_anime_titles(anime: anilist.types.Anime) -> list[str]:
-    romaji = getattr( anime.title, "romaji", "" )
-    native = getattr( anime.title, "native", "" )
-    english = getattr( anime.title, "english", "" )
+    romaji = getattr(getattr(anime, "title", ""), "romaji", "" )
+    native = getattr(getattr(anime, "title", ""), "native", "" )
+    english = getattr(getattr(anime, "title", ""), "english", "" )
 
     if settings.ANIME_TITLES == "romaji":
         titles = [ romaji, english, native ]
@@ -40,8 +40,8 @@ def get_anime_titles(anime: anilist.types.Anime) -> list[str]:
 
 
 def get_character_names(character: anilist.types.Character) -> list[str]:
-    native = getattr( character.name, "native", "" )
-    alternative = getattr( character.name, "alternative", "" )
+    native = getattr(getattr(character, "name", ""), "native", "" )
+    alternative = getattr(getattr(character, "name", ""), "alternative", "" )
 
     if settings.ANIME_TITLES == "japanese":
         names = [ native, alternative ]
@@ -53,7 +53,7 @@ def get_character_names(character: anilist.types.Character) -> list[str]:
 def get_main_characters(anime: anilist.types.Anime) -> list[anilist.types.Character]:
     characters = []
     for character in anime.characters:
-        if character.role == "MAIN":
+        if getattr(character, 'role', '').upper() == "MAIN":
             characters.append(character)
     return characters
 
@@ -87,7 +87,7 @@ async def send_to_developers(text: str, context: BotContext):
         await context.bot.send_message(chat_id = chat_id, text = text, parse_mode = ParseMode.HTML)
 
 
-async def get_help_text( topic: str ):
+async def get_help_text( topic: str ) -> str:
     return ""
 
 
@@ -127,7 +127,7 @@ async def handle_message(update: Update, context: BotContext) -> None:
 
 async def cmd_restart(update: Update, context: BotContext) -> None:
     context.bot_data["restart"] = True
-    context.application.stop()
+    await context.application.stop()
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
@@ -169,13 +169,15 @@ async def cmd_ping(update: Update, context: BotContext) -> None:
 
 
 async def cmd_latest(update: Update, context: BotContext):
-    text = ""
+    text = "Not yet implemented"
     text = remove_indents(text)
     await update.message.reply_text(text, reply_to_message_id = update.message.message_id)
 
 
 async def cmd_anime(update: Update, context: BotContext):
     title = " ".join(context.args)
+    if len(title) == 0:
+        return
     if title.isnumeric():
         animes = await client.get_anime(title)
     else:
@@ -187,8 +189,8 @@ async def cmd_anime(update: Update, context: BotContext):
         return
 
     if type(animes) is tuple:
-        animes, pagination = animes
         text = ""
+        animes, pagination = animes
         for anime in animes:
             titles = "\n".join(get_anime_titles(anime)).replace("\n\n", "\n")
             text = f"{text}\n\nID: {anime.id}\n{titles}"
@@ -199,13 +201,13 @@ async def cmd_anime(update: Update, context: BotContext):
         text = f"""
         ID: {anime.id}
         <b>{titles}</b>
-        \t<i>{getattr(anime, "description_short", anime.description)}</i>
-        Status: {anime.status}
-        Genres: {', '.join(anime.genres)}
-        Tags: {', '.join(anime.tags)}\n
-        Started: {anime.start_date.year}, Ended: {anime.end_date.year}
-        Main characters: {', '.join(get_main_characters(anime))}
-        Url: <a href='{anime.url}' title='Anilist url'>{anime.url}</a>
+        \t<i>{getattr(anime, 'description_short', getattr(anime, 'description', ''))}</i>
+        Status: {getattr(anime, "status", "")}
+        Genres: {', '.join(getattr(anime, 'genres', []))}
+        Tags: {', '.join(getattr(anime, 'tags', []))}\n
+        Started: {getattr(getattr(anime, 'start_date', ''), 'year', '')}, Ended: {getattr(getattr(anime, 'end_date.year', ''), 'year', '')}
+        Main characters: {', '.join(get_character_names(get_main_characters(anime)))}
+        Url: <a href='{getattr(anime, 'url', '')}' title='Anilist url'>{getattr(anime, 'url', '')}</a>
         """
     
     text = remove_indents(text)
@@ -214,6 +216,8 @@ async def cmd_anime(update: Update, context: BotContext):
 
 async def cmd_character(update: Update, context: BotContext):
     name = " ".join(context.args)
+    if len(name) == 0:
+        return 
     if name.isnumeric():
         characters = await client.get_character(name)
     else:
@@ -226,6 +230,7 @@ async def cmd_character(update: Update, context: BotContext):
 
     if type(characters) is tuple:
         text = ""
+        characters, pagination = characters
         for character in characters:
             titles = "\n".join(get_character_names(character)).replace("\n\n", "\n")
             text = f"{text}\nID: {character.id}\n{titles}"
@@ -236,12 +241,12 @@ async def cmd_character(update: Update, context: BotContext):
         text = f"""
         ID: {character.id}
         <b>{names}</b>
-        \t<i>{character.description}</i>
-        Gender: {getattr(character, "gender", "")}
-        Role: {character.role}
-        Age: {character.age}
-        DOB: {character.birth_date.year}
-        Url: <a href='{character.url}' title='Anilist url'>{character.url}</a>
+        \t<i>{getattr(character, 'description', '')}</i>
+        Gender: {getattr(character, 'gender', '')}
+        Role: {getattr(character, 'role', '')}
+        Age: {getattr(character, 'age', '')}
+        DOB: {getattr(getattr(character, 'birth_date', ''), 'year', '')}
+        Url: <a href='{getattr(character, 'url', '')}' title='Anilist url'>{getattr(character, 'url', '')}</a>
         """
     
     text = remove_indents(text)
@@ -249,12 +254,12 @@ async def cmd_character(update: Update, context: BotContext):
 
 
 async def cmd_watch(update: Update, context: BotContext):
-    text = ""
+    text = "Not yet implemented"
     await update.message.reply_text(text, reply_to_message_id = update.message.message_id)
 
 
 async def cmd_download(update: Update, context: BotContext):
-    text = ""
+    text = "Not yet implemented"
     await update.message.reply_text(text, reply_to_message_id = update.message.message_id)
 
 
@@ -271,13 +276,13 @@ async def handle_left_member(update: Update, context: BotContext):
         await log_in_channels( f"Left {chat.type} chat: {chat.title} with id: {chat.id}", context )
 
 
-
 if settings.DEBUG:
     async def raise_bot_exception(update: Update, context: BotContext):
         context.bot.this_method_does_not_exist()
 
+
 # Function for creating the bot application 
-async def create_bot_application(bot_token: str, secret_token: str, bot_web_url: str) -> None:
+async def create_bot_application(bot_token: str, secret_token: str, bot_web_url: str) -> Application:
     """Set up bot application and a web application for handling the incoming requests."""
     context_types = ContextTypes(context = BotContext )
 

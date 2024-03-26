@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
         
         # Runs after app shuts down
         logger.info("\n⛔ Bot shutting down ...\n")
-        await application.stop()
+        await application.shutdown()
         
         if application.bot_data.get("restart", False):
             os.execl(sys.executable, sys.executable, *sys.argv)
