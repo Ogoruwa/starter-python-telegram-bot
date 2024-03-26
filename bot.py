@@ -1,4 +1,3 @@
-import re
 import anilist
 import html, json, traceback
 from logging import getLogger
@@ -126,6 +125,11 @@ async def handle_message(update: Update, context: BotContext) -> None:
     await update.message.reply_text(text)
 
 
+async def cmd_restart(update: Update, context: Context) -> None:
+    context.bot_data["restart"] = True
+    context.application.stop_running()
+
+
 async def cmd_start(update: Update, context: BotContext) -> None:
     message = update.message
     user = update.effective_user
@@ -186,7 +190,7 @@ async def cmd_anime(update: Update, context: BotContext):
     if len(animes) > 1:
         text = ""
         for anime in animes:
-            titles = "\n".join(get_anime_titles(anime))
+            titles = "\n".join(get_anime_titles(anime)).replace("\n\n" "\n")
             text = f"{text}\n\nID: {anime.id}\n{titles}"
     
     else:
@@ -194,7 +198,7 @@ async def cmd_anime(update: Update, context: BotContext):
         titles = "\n".join(get_anime_titles(anime)).replace("\n\n", "\n")
         text = f"""
         ID: {anime.id}
-        <b>{titles}</b>\n
+        <b>{titles}</b>
         \t<i>{anime.description_short}</i>
         Status: {anime.status}
         Genres: {', '.join(anime.genres)}
@@ -211,9 +215,9 @@ async def cmd_anime(update: Update, context: BotContext):
 async def cmd_character(update: Update, context: BotContext):
     name = " ".join(context.args)
     if name.isnumeric():
-        character = await client.get_character(name)
+        characters = await client.get_character(name)
     else:
-        character = await client.search_character(name, 8, 1)
+        characters = await client.search_character(name, 8, 1)
 
     if characters is None:
         text = "Character not found"
@@ -224,7 +228,7 @@ async def cmd_character(update: Update, context: BotContext):
     if len(characters) > 1:
         text = ""
         for character in characters:
-            titles = get_character_names(character)
+            titles = "\n".join(get_character_names(character)).replace("\n\n", "\n")
             text = f"{text}\n{' / '.join(titles)}"
     
     else:
@@ -296,6 +300,7 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application.add_handler( CommandHandler("character", cmd_character) )
     application.add_handler( CommandHandler("watch", cmd_watch) )
     application.add_handler( CommandHandler("download", cmd_download) )
+    application.add_handler( CommandHandler("restart", cmd_restart) )
 
     
     if settings.DEBUG:
