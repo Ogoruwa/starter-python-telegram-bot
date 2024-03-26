@@ -185,16 +185,16 @@ async def cmd_anime(update: Update, context: BotContext):
         text = "Anime not found"
         await update.message.reply_text( text, reply_to_message_id = update.message.message_id )
         return
-    animes, pagination = animes
 
-    if len(animes) > 1:
+    if type(animes) is tuple:
+        animes, pagination = animes
         text = ""
         for anime in animes:
             titles = "\n".join(get_anime_titles(anime)).replace("\n\n", "\n")
             text = f"{text}\n\nID: {anime.id}\n{titles}"
     
     else:
-        anime = animes[0]
+        anime = animes
         titles = "\n".join(get_anime_titles(anime)).replace("\n\n", "\n")
         text = f"""
         ID: {anime.id}
@@ -223,16 +223,15 @@ async def cmd_character(update: Update, context: BotContext):
         text = "Character not found"
         await update.message.reply_text( text, reply_to_message_id = update.message.message_id )
         return
-    characters, pagination = characters
 
-    if len(characters) > 1:
+    if type(characters) is tuple:
         text = ""
         for character in characters:
             titles = "\n".join(get_character_names(character)).replace("\n\n", "\n")
             text = f"{text}\nID: {character.id}\n{titles}"
     
     else:
-        character = characters[0]
+        character = characters
         names = "\n".join(get_character_names(character)).replace("\n\n", "\n")
         text = f"""
         ID: {character.id}
