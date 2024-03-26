@@ -171,6 +171,7 @@ async def cmd_latest(update: Update, context: BotContext):
 
 
 async def cmd_anime(update: Update, context: BotContext):
+    logger.info("DURHAM CJ FIX TO")
     context.dhah()
     title = context.args[0]
     if title.isnumeric():
@@ -210,6 +211,8 @@ async def cmd_anime(update: Update, context: BotContext):
 
 
 async def cmd_character(update: Update, context: BotContext):
+    logger.info("XH ASYNC CAN'T")
+    a
     name = context.args[0]
     if name.isnumeric():
         character = await client.get_character(name)
@@ -294,7 +297,7 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application.add_handler( CommandHandler("latest", cmd_latest) )
 
     application.add_handler( StringCommandHandler("anime", cmd_anime) )
-    application.add_handler( StringCommandHandler("character", cmd_character) )
+    application.add_handler( CommandHandler("character", cmd_character) )
     application.add_handler( StringCommandHandler("watch", cmd_watch) )
     application.add_handler( StringCommandHandler("download", cmd_download) )
 
