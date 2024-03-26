@@ -1,3 +1,4 @@
+import os, sys
 from routes import router
 from telegram import Update
 from logging import getLogger
@@ -39,6 +40,9 @@ async def lifespan(app: FastAPI):
         # Runs after app shuts down
         logger.info("\n⛔ Bot shutting down ...\n")
         await application.stop()
+        
+        if application.bot_data.get("restart", False):
+            os.execl(sys.executable, sys.executable, *sys.argv)
 
 
 app = FastAPI( title = "BotFastAPI", description = "A webhook api for a telegram bot", lifespan = lifespan )
