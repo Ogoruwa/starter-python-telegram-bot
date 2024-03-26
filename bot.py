@@ -127,7 +127,7 @@ async def handle_message(update: Update, context: BotContext) -> None:
 
 async def cmd_restart(update: Update, context: BotContext) -> None:
     context.bot_data["restart"] = True
-    await context.application.stop()
+    yield
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
