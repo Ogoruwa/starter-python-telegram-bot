@@ -5,7 +5,7 @@ from logging import getLogger
 from settings import get_settings
 from telegram.constants import ParseMode
 from telegram import BotCommand, Update
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackContext, filters, StringCommandHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackContext, filters
 
 
 settings = get_settings()
@@ -171,9 +171,7 @@ async def cmd_latest(update: Update, context: BotContext):
 
 
 async def cmd_anime(update: Update, context: BotContext):
-    logger.info("DURHAM CJ FIX TO")
-    context.dhah()
-    title = context.args[0]
+    title = " ".join(context.args)
     if title.isnumeric():
         animes = await client.get_anime(title)
     else:
@@ -211,9 +209,7 @@ async def cmd_anime(update: Update, context: BotContext):
 
 
 async def cmd_character(update: Update, context: BotContext):
-    logger.info("XH ASYNC CAN'T")
-    a
-    name = context.args[0]
+    name = " ".join(context.args)
     if name.isnumeric():
         character = await client.get_character(name)
     else:
@@ -296,10 +292,10 @@ async def create_bot_application(bot_token: str, secret_token: str, bot_web_url:
     application.add_handler( CommandHandler("about", cmd_about) )
     application.add_handler( CommandHandler("latest", cmd_latest) )
 
-    application.add_handler( StringCommandHandler("anime", cmd_anime) )
+    application.add_handler( CommandHandler("anime", cmd_anime) )
     application.add_handler( CommandHandler("character", cmd_character) )
-    application.add_handler( StringCommandHandler("watch", cmd_watch) )
-    application.add_handler( StringCommandHandler("download", cmd_download) )
+    application.add_handler( CommandHandler("watch", cmd_watch) )
+    application.add_handler( CommandHandler("download", cmd_download) )
 
     
     if settings.DEBUG:
