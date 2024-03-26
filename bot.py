@@ -125,7 +125,7 @@ async def handle_message(update: Update, context: BotContext) -> None:
     await update.message.reply_text(text)
 
 
-async def cmd_restart(update: Update, context: Context) -> None:
+async def cmd_restart(update: Update, context: BotContext) -> None:
     context.bot_data["restart"] = True
     context.application.stop_running()
 
