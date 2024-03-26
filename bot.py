@@ -127,7 +127,7 @@ async def handle_message(update: Update, context: BotContext) -> None:
 
 async def cmd_restart(update: Update, context: BotContext) -> None:
     context.bot_data["restart"] = True
-    context.application.stop_running()
+    context.application.stop()
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
@@ -199,7 +199,7 @@ async def cmd_anime(update: Update, context: BotContext):
         text = f"""
         ID: {anime.id}
         <b>{titles}</b>
-        \t<i>{anime.description_short}</i>
+        \t<i>{getattr(anime, "description_short", anime.description)}</i>
         Status: {anime.status}
         Genres: {', '.join(anime.genres)}
         Tags: {', '.join(anime.tags)}\n
@@ -237,7 +237,7 @@ async def cmd_character(update: Update, context: BotContext):
         ID: {character.id}
         <b>{names}</b>
         \t<i>{character.description}</i>
-        Gender: {character.gender}
+        Gender: {getattr(character, "gender", "")}
         Role: {character.role}
         Age: {character.age}
         DOB: {character.birth_date.year}
