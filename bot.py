@@ -190,7 +190,7 @@ async def cmd_anime(update: Update, context: BotContext):
     if len(animes) > 1:
         text = ""
         for anime in animes:
-            titles = "\n".join(get_anime_titles(anime)).replace("\n\n" "\n")
+            titles = "\n".join(get_anime_titles(anime)).replace("\n\n", "\n")
             text = f"{text}\n\nID: {anime.id}\n{titles}"
     
     else:
@@ -229,7 +229,7 @@ async def cmd_character(update: Update, context: BotContext):
         text = ""
         for character in characters:
             titles = "\n".join(get_character_names(character)).replace("\n\n", "\n")
-            text = f"{text}\n{' / '.join(titles)}"
+            text = f"{text}\nID: {character.id}\n{titles}"
     
     else:
         character = characters[0]
