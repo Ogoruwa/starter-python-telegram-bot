@@ -210,7 +210,7 @@ async def cmd_anime(update: Update, context: BotContext):
         text = f"""
         ID: {anime.id}
         <b>{titles}</b>
-        \t<i>{getattr(anime, 'description_short', getattr(anime, 'description', ''))}</i>
+        \t<i>{getattr(anime, 'description_short', getattr(anime, 'description', '')).replace('<br/>','\n')}</i>
         Status: {getattr(anime, "status", "")}
         Genres: {', '.join(getattr(anime, 'genres', []))}
         Tags: {', '.join(getattr(anime, 'tags', []))}\n
