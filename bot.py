@@ -1,3 +1,4 @@
+import re
 import anilist
 import html, json, traceback
 from logging import getLogger
@@ -10,6 +11,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, ContextTyp
 settings = get_settings()
 logger = getLogger(__name__)
 client = anilist.AsyncClient()
+ALLOWED_TAGS = [ "a", "b", "code", "i", "pre" ]
 
 
 class BotContext(CallbackContext):
@@ -25,6 +27,14 @@ def remove_indents( text: str ) -> str:
     return text
 
 
+def remove_tags_except(tags: list, text, ):
+    if tags is None:
+        return text
+    else:
+        result = re.sub(r"</?(?!(?:" + "|".join(tags) + r")\b)[a-z](?:[^>\"']|\"[^\"]*\"|'[^']*')*>", '', text)
+        return result
+
+ 
 def get_anime_titles(anime: anilist.types.Anime) -> list[str]:
     romaji = getattr(getattr(anime, "title", ""), "romaji", "" )
     native = getattr(getattr(anime, "title", ""), "native", "" )
@@ -127,7 +137,6 @@ async def handle_message(update: Update, context: BotContext) -> None:
 
 async def cmd_restart(update: Update, context: BotContext) -> None:
     context.bot_data["restart"] = True
-    yield
 
 
 async def cmd_start(update: Update, context: BotContext) -> None:
@@ -211,6 +220,7 @@ async def cmd_anime(update: Update, context: BotContext):
         """
     
     text = remove_indents(text)
+    text = remove_tags_except( ALLOWED_TAGS, text )
     await update.message.reply_html(text, reply_to_message_id = update.message.message_id)
 
 
@@ -250,6 +260,7 @@ async def cmd_character(update: Update, context: BotContext):
         """
     
     text = remove_indents(text)
+    text = remove_tags_except( ALLOWED_TAGS, text )
     await update.message.reply_html(text, reply_to_message_id = update.message.message_id)
 
 
